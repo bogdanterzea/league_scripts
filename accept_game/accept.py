@@ -15,7 +15,7 @@ def checkGameAvailable():
     while True:
         pos = imagesearch(acceptButtonImg, 0.8)
         if not pos[0] == -1:
-            pyautogui.moveTo(pos[0]+18, pos[1]+3)
+            pyautogui.moveTo(pos[0]+30, pos[1]+30)
             time.sleep(0.5)
             pyautogui.click()
             print("Game accepted!")
