@@ -1,5 +1,5 @@
 build/
 dist/
 output/
-.accept.spec
-.requirements.txt
+accept.spec
+requiremets.txt
