@@ -14,4 +14,4 @@ On the right side of this repository, you can find `Releases`.
 
 ##### Suggestion: Set the main screen as the screen where you expect the league client to appear.
 
-## Feel free to send appreciation on Revolut @bobo1497 <3
+## Feel free to send appreciation on Revolut `@bobo1497` <3
