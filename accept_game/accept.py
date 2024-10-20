@@ -69,7 +69,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        print("Running...")
         main()
     except Exception as e:
         print(f"Error occurred: {e}")
