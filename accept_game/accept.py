@@ -18,16 +18,17 @@ def checkGameAvailable():
             pyautogui.moveTo(pos[0]+30, pos[1]+30)
             time.sleep(0.5)
             pyautogui.click()
+            pyautogui.click()
             print("Game accepted!")
             break
         time.sleep(TIMELAPSE)
     
 
 def checkChampionSelection():
-    flash = imagesearch(championSelectionImg_flash)
-    emote = imagesearch(championSelectionImg_search)
+    flashIMG = imagesearch(championSelectionImg_flash)
+    searchIMG = imagesearch(championSelectionImg_search)
 
-    if not emote[0] == -1 or not flash[0] == -1:
+    if not searchIMG[0] == -1 or not flashIMG[0] == -1:
         return True
     else:
         return False
