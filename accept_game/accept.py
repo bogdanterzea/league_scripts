@@ -1,63 +1,66 @@
-import pyautogui
-from python_imagesearch.imagesearch import imagesearch_loop, imagesearch
 import time
+import ctypes
+import pygetwindow as gw
 
-pyautogui.FAILSAFE = False
+from python_imagesearch.imagesearch import imagesearch_loop, imagesearch
+
+# Constants for Windows API
+MOUSEEVENTF_MOVE = 0x0001
+MOUSEEVENTF_ABSOLUTE = 0x8000
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+
+screen_width = ctypes.windll.user32.GetSystemMetrics(0)
+screen_height = ctypes.windll.user32.GetSystemMetrics(1)
+
 TIMELAPSE = 1
 
-acceptButtonImg = './accept-backup.png'
+acceptButtonImgFirst = './accept-backup.png'
 acceptedButtonImg = './sample-accepted.png'
 championSelectionImg_flash = './flash-icon.png'
 championSelectionImg_search = './search-bar.png'
 playButtonImg = './play-button.png'
 
+def focusWindow(title="League of Legends"):
+    windows = gw.getWindowsWithTitle(title)
+    if windows:
+        league_window = windows[0]
+        league_window.minimize()
+        time.sleep(0.1)
+        league_window.restore()
+        time.sleep(0.1)
+        return True
+    else:
+        print("League of Legends window not found.")
+    return False
+
+def move_and_click(x, y):\
+    # Calculate absolute x and y for Windows
+    abs_x = int(x * 65536 / screen_width)
+    abs_y = int(y * 65536 / screen_height)
+
+    focusWindow()
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, abs_x, abs_y, 0, 0)
+    time.sleep(0.1)
+
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+    time.sleep(0.05)
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+    time.sleep(0.05)
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+    time.sleep(0.05)
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+    # Performing double click just to be sure.
+
+    print(f"Double clicked at position: ({x}, {y})")
+
 def checkGameAvailable():
     while True:
-        pos = imagesearch(acceptButtonImg, 0.8)
+        pos = imagesearch(acceptButtonImgFirst, 0.8)
+
         if not pos[0] == -1:
-            pyautogui.moveTo(pos[0]+30, pos[1]+30)
-
-            # #Solution 0 ------------------------------------------------------------------------------------------
-            # time.sleep(0.5)
-            # pyautogui.click()
-            # pyautogui.click()
-
-            # # Solution 1 - enter before clicking ------------------------------------------------------------------------------------------
-            # pyautogui.press('enter')  # Simulate pressing Enter key
-            # pyautogui.click()
-
-            # # Solution 3 ---------------------------------------------------------------------------------------------------------------------------------------
-            # time.sleep(1)
-            # pyautogui.click()
-            # time.sleep(1)
-
-            # # Solution 4 - other library ------------------------------------------------------------------------------------------
-            # # pip install pydirectinput
-            # # import pydirectinput
-            # pydirectinput.click()
-
-            # # Solution 5 ---------------------------------------------------------------------------------------------------------------------------------------
-            # # pip install pywin32
-            # # import win32api, win32con
-            # # import time
-            # def click_at(x, y):
-            # # Move the mouse to the specified position
-            # win32api.SetCursorPos((x, y))
-            
-            # # Simulate a left mouse button down and up (click)
-            # win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-            # time.sleep(0.5)
-            # win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-
-            # # Solution 6 ---------------------------------------------------------------------------------------------------------------------------------------
-            # # pip install PyDirectInput
-            # # import pydirectinput
-            # # import time
-
-            # def click_at(x, y):
-            #     pydirectinput.moveTo(x, y)
-            #     pydirectinput.click()
-
+            time.sleep(0.5)
+            move_and_click(pos[0] + 30, pos[1] + 30)
             print("Game accepted!")
             break
         time.sleep(TIMELAPSE)
@@ -81,10 +84,8 @@ def checkGameCancelled():
     else:
         return False
 
-
 def main():
     print("Running...")
-
     run = True
 
     while run is True:
