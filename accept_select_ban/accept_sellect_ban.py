@@ -1,7 +1,6 @@
 import time
 import ctypes
 import pyautogui
-import pygetwindow as gw
 
 from python_imagesearch.imagesearch import imagesearch_loop, imagesearch
 
@@ -16,13 +15,21 @@ screen_height = ctypes.windll.user32.GetSystemMetrics(1)
 
 TIMELAPSE = 1
 
-# championPickButton = './pick-button.png'
-# championBanPhase = './ban-phase.png' TO DO
 acceptButtonImgFirst = './accept-backup.png'
 acceptedButtonImg = './sample-accepted.png'
 championSelectionImg_flash = './flash-icon.png'
 championSelectionImg_search = './search-bar.png'
 playButtonImg = './play-button.png'
+
+banPhaseTitle = "./ban-phase-title.png"
+banPhaseButton = "./ban-phase-button.png"
+banPhaseUnavailableButton = "./ban-phase-unavailable-button.png"
+
+lockInphaseTitle = "./lock-in-phase-title.png"
+lockInphaseButton = "./lock-in-phase-button.png"
+lockInphaseUnavailableButton = "./lock-in-phase-unavailable-button.png"
+
+gameReadyText = "./prepare-for-battle.png"
 
 def focusWindow(title="League of Legends"):
     windows = gw.getWindowsWithTitle(title)
@@ -67,6 +74,8 @@ def get_champion_and_ban_choices():
     return champions, bans
 
 def checkGameAvailable():
+    print("Check if game is available...")
+
     while True:
         pos = imagesearch(acceptButtonImgFirst, 0.8)
 
@@ -74,7 +83,7 @@ def checkGameAvailable():
             time.sleep(0.5)
             move_and_click(pos[0] + 30, pos[1] + 30)
             print("Game accepted!")
-            break
+            return True
         time.sleep(TIMELAPSE)
 
 def checkChampionSelection():
@@ -87,7 +96,7 @@ def checkChampionSelection():
         return False
     
 def checkChampionBanning():
-    banIMG = imagesearch(championBanPhase)
+    banIMG = imagesearch(banPhaseTitle)
 
     if not banIMG[0] == -1:
         return True
@@ -102,13 +111,11 @@ def checkGameCancelled():
         return True
     else:
         return False
-    
-# TO DO - check this function------------------------------
-def checkChampionPick():
-    accepted = imagesearch(acceptedButtonImg)
-    play = imagesearch(playButtonImg)
 
-    if accepted[0] == -1 and not play[0] == -1:
+def checkChampionPick():
+    lockInTitleImage = imagesearch(lockInphaseTitle)
+
+    if not lockInTitleImage[0] == -1:
         return True
     else:
         return False
@@ -131,11 +138,15 @@ def selectMainChampion(champions):
     pyautogui.write(primary_champion, interval=0.1)
     time.sleep(0.1)
 
-    # TO DO - CHECK IF IT IS THE RIGHT POSITION
-    move_and_click(search_pos[0] - 400, search_pos[1] + 200)
+    move_and_click(search_pos[0] , search_pos[1] + 90)
     print(f"Selected champion: {primary_champion}")
 
     return True
+
+def detectGameStart():
+    print("Checking if game has started...")
+    game_start_pos = imagesearch(gameReadyText)
+    return game_start_pos is not None
 
 def banChampion(bans):
     for champion in bans:
@@ -195,46 +206,45 @@ def pickChampion(champions):
         else:
             print(f"{champion} not available for picking, trying next...")
 
-    # If no champion was picked, click the fallback position
     print("No champions available to pick from the list, using default position.")
     move_and_click(search_pos[0] + 400, search_pos[1] - 200)
     return False
 
 def main():
     print("Running...")
+
+    champions, bans = get_champion_and_ban_choices()
     run = True
 
+    print(champions)
+    print(bans)
+
     while run is True:
-        champions, bans = get_champion_and_ban_choices()
 
-        print(champions)
-        print(bans)
-
+# to improve this loop and maybe find new assets for the cancel and start phase
         checkGameAvailable()
         time.sleep(TIMELAPSE)
 
         while True:
-            cancelled = checkGameCancelled()
-            if cancelled is True:
+            # if detectGameStart():
+            #     print("Game has started. Exiting script.")
+            #     return
+
+            if checkGameCancelled():
                 print("Game cancelled, waiting...")
                 break
-            
-            csResult = checkChampionSelection()
-            if csResult is True:
+
+            if checkChampionSelection():
                 print("Selecting Champion...")
                 selectMainChampion(champions)
                 time.sleep(TIMELAPSE)
-                break
 
-            cbResult = checkChampionBanning()
-            if cbResult is True:
+            elif checkChampionBanning():
                 print("Ban champion phase...")
                 banChampion(bans)
                 time.sleep(TIMELAPSE)
-                break
 
-            cpResult = checkChampionPick()
-            if cpResult is True:
+            elif checkChampionPick():
                 print("Picking champion...")
                 pickChampion(champions)
                 time.sleep(TIMELAPSE)
