@@ -1,6 +1,8 @@
 import time
 import ctypes
+import pyautogui
 import pygetwindow as gw
+
 from python_imagesearch.imagesearch import imagesearch_loop, imagesearch
 
 # Constants for Windows API
@@ -12,25 +14,31 @@ MOUSEEVENTF_LEFTUP = 0x0004
 screen_width = ctypes.windll.user32.GetSystemMetrics(0)
 screen_height = ctypes.windll.user32.GetSystemMetrics(1)
 
-# User-Defined Champion and Ban Choices
-primary_champion_img = './champion1.png'
-backup_champion_img = './champion2.png'
-primary_ban_img = './ban1.png'
-backup_ban_img = './ban2.png'
+TIMELAPSE = 1
+
+# championPickButton = './pick-button.png'
+# championBanPhase = './ban-phase.png' TO DO
+acceptButtonImgFirst = './accept-backup.png'
+acceptedButtonImg = './sample-accepted.png'
+championSelectionImg_flash = './flash-icon.png'
+championSelectionImg_search = './search-bar.png'
+playButtonImg = './play-button.png'
 
 def focusWindow(title="League of Legends"):
     windows = gw.getWindowsWithTitle(title)
     if windows:
         league_window = windows[0]
-        hwnd = league_window._hWnd
-        ctypes.windll.user32.SetForegroundWindow(hwnd)
+        league_window.minimize()
+        time.sleep(0.1)
+        league_window.restore()
         time.sleep(0.1)
         return True
     else:
         print("League of Legends window not found.")
     return False
 
-def move_and_click(x, y):
+def move_and_click(x, y):\
+    # Calculate absolute x and y for Windows
     abs_x = int(x * 65536 / screen_width)
     abs_y = int(y * 65536 / screen_height)
 
@@ -41,33 +49,33 @@ def move_and_click(x, y):
     ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
     time.sleep(0.05)
     ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
-    print(f"Clicked at position: ({x}, {y})")
+    time.sleep(0.05)
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+    time.sleep(0.05)
+    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+    # Performing double click just to be sure.
 
-def selectChampion(primary_img, backup_img):
-    pos = imagesearch(primary_img, 0.8)
-    if pos[0] != -1:
-        print("Primary champion found!")
-        move_and_click(pos[0] + 30, pos[1] + 30)
-    else:
-        pos = imagesearch(backup_img, 0.8)
-        if pos[0] != -1:
-            print("Primary champion banned, selecting backup champion.")
-            move_and_click(pos[0] + 30, pos[1] + 30)
-        else:
-            print("No champions available for selection.")
+    print(f"Double clicked at position: ({x}, {y})")
 
-def banChampion(primary_ban, backup_ban):
-    pos = imagesearch(primary_ban, 0.8)
-    if pos[0] != -1:
-        print("Primary ban target found!")
-        move_and_click(pos[0] + 30, pos[1] + 30)
-    else:
-        pos = imagesearch(backup_ban, 0.8)
-        if pos[0] != -1:
-            print("Primary ban target already banned, selecting backup ban.")
+def get_champion_and_ban_choices():
+    print("Enter champions for picking (primary and 2 backups):")
+    champions = [input("Primary champion: "), input("First backup: "), input("Second backup: ")]
+    
+    print("Enter champions for banning (primary and 2 backups):")
+    bans = [input("Primary ban: "), input("First backup ban: "), input("Second backup ban: ")]
+    
+    return champions, bans
+
+def checkGameAvailable():
+    while True:
+        pos = imagesearch(acceptButtonImgFirst, 0.8)
+
+        if not pos[0] == -1:
+            time.sleep(0.5)
             move_and_click(pos[0] + 30, pos[1] + 30)
-        else:
-            print("No ban options available.")
+            print("Game accepted!")
+            break
+        time.sleep(TIMELAPSE)
 
 def checkChampionSelection():
     flashIMG = imagesearch(championSelectionImg_flash)
@@ -77,23 +85,133 @@ def checkChampionSelection():
         return True
     else:
         return False
+    
+def checkChampionBanning():
+    banIMG = imagesearch(championBanPhase)
 
-def championSelectionPhase():
-    if checkChampionSelection():
-        print("Champion Selection Phase...")
-        selectChampion(primary_champion_img, backup_champion_img)
+    if not banIMG[0] == -1:
+        return True
+    else:
+        return False
 
-def banPhase():
-    print("Ban Phase...")
-    banChampion(primary_ban_img, backup_ban_img)
+def checkGameCancelled():
+    accepted = imagesearch(acceptedButtonImg)
+    play = imagesearch(playButtonImg)
+
+    if accepted[0] == -1 and not play[0] == -1:
+        return True
+    else:
+        return False
+    
+# TO DO - check this function------------------------------
+def checkChampionPick():
+    accepted = imagesearch(acceptedButtonImg)
+    play = imagesearch(playButtonImg)
+
+    if accepted[0] == -1 and not play[0] == -1:
+        return True
+    else:
+        return False
+    
+def selectMainChampion(champions):
+    search_pos = imagesearch(championSelectionImg_search)
+    if search_pos[0] == -1:
+        print("Search bar not found.")
+        return False
+
+    move_and_click(search_pos[0] + 30, search_pos[1] + 30)
+    time.sleep(0.1)
+
+    pyautogui.hotkey('ctrl', 'a')
+    time.sleep(0.1)
+    pyautogui.press('backspace')
+    time.sleep(0.1)
+
+    primary_champion = champions[0]
+    pyautogui.write(primary_champion, interval=0.1)
+    time.sleep(0.1)
+
+    # TO DO - CHECK IF IT IS THE RIGHT POSITION
+    move_and_click(search_pos[0] - 400, search_pos[1] + 200)
+    print(f"Selected champion: {primary_champion}")
+
+    return True
+
+def banChampion(bans):
+    for champion in bans:
+        # Locate and click the search bar to focus
+        search_pos = imagesearch(championSelectionImg_search)
+        if search_pos[0] == -1:
+            print("Search bar not found.")
+            return False
+
+        move_and_click(search_pos[0] + 30, search_pos[1] + 30)
+        time.sleep(0.1)
+
+        pyautogui.hotkey('ctrl', 'a')
+        time.sleep(0.1)
+        pyautogui.press('backspace')
+        time.sleep(0.1)
+
+        pyautogui.write(champion, interval=0.1)
+        print(f"Attempting to ban champion: {champion}")
+        time.sleep(0.5)
+
+        ban_button_pos = imagesearch('ban-button.png') # TO GET ASSETS
+        if ban_button_pos[0] != -1:
+            move_and_click(ban_button_pos[0] + 30, ban_button_pos[1] + 30)
+            print(f"Banned champion: {champion}")
+            return True
+        else:
+            print(f"{champion} not available for banning, trying next...")
+
+    print("No champions available to ban from the list.")
+    return False
+
+def pickChampion(champions):
+    for champion in champions:
+        search_pos = imagesearch(championSelectionImg_search)
+        if search_pos[0] == -1:
+            print("Search bar not found.")
+            return False
+
+        move_and_click(search_pos[0] + 30, search_pos[1] + 30)
+        time.sleep(0.1)
+
+        pyautogui.hotkey('ctrl', 'a')
+        time.sleep(0.1)
+        pyautogui.press('backspace')
+        time.sleep(0.1)
+
+        pyautogui.write(champion, interval=0.1)
+        print(f"Attempting to pick champion: {champion}")
+        time.sleep(0.5)  # Delay to allow image recognition
+
+        pick_button_pos = imagesearch('pick-button.png')
+        if pick_button_pos[0] != -1:
+            move_and_click(pick_button_pos[0] + 30, pick_button_pos[1] + 30)
+            print(f"Picked champion: {champion}")
+            return True
+        else:
+            print(f"{champion} not available for picking, trying next...")
+
+    # If no champion was picked, click the fallback position
+    print("No champions available to pick from the list, using default position.")
+    move_and_click(search_pos[0] + 400, search_pos[1] - 200)
+    return False
 
 def main():
     print("Running...")
     run = True
 
     while run is True:
+        champions, bans = get_champion_and_ban_choices()
+
+        print(champions)
+        print(bans)
+
         checkGameAvailable()
-        time.sleep(1)
+        time.sleep(TIMELAPSE)
 
         while True:
             cancelled = checkGameCancelled()
@@ -101,17 +219,28 @@ def main():
                 print("Game cancelled, waiting...")
                 break
             
-            if checkChampionSelection():
-                print("Starting champion selection...")
-                championSelectionPhase()
-                time.sleep(1)  # Delay to allow selection to process
+            csResult = checkChampionSelection()
+            if csResult is True:
+                print("Selecting Champion...")
+                selectMainChampion(champions)
+                time.sleep(TIMELAPSE)
+                break
 
-            if checkBanPhase():
-                print("Starting ban selection...")
-                banPhase()
-                time.sleep(1)  # Delay to allow ban to process
-            
-            time.sleep(1)
+            cbResult = checkChampionBanning()
+            if cbResult is True:
+                print("Ban champion phase...")
+                banChampion(bans)
+                time.sleep(TIMELAPSE)
+                break
+
+            cpResult = checkChampionPick()
+            if cpResult is True:
+                print("Picking champion...")
+                pickChampion(champions)
+                time.sleep(TIMELAPSE)
+                break
+
+            time.sleep(TIMELAPSE)
 
 if __name__ == "__main__":
     try:
